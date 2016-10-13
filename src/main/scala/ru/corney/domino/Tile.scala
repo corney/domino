@@ -9,23 +9,25 @@ import scala.util.Random
   * Created by corney on 12.10.16.
   */
 case class Tile(sideA: Piece, sideB: Piece) {
-  require (sideA <= sideB)
+  require(sideA <= sideB)
   val double = sideA == sideB
 
-  def piece(side: Side): Option[Piece] = {
-    if (double) {
-      Some(sideA)
-    } else {
-      side match {
-        case Side.A =>
-          Some(sideA)
-        case Side.B =>
-          Some(sideB)
-        case Side.A_DOUBLE | Side.B_DOUBLE =>
-          None
-      }
+  def piece(side: Side): Piece = {
+    side match {
+      case Side.A | Side.A_DOUBLE =>
+        sideA
+      case Side.B | Side.B_DOUBLE =>
+        sideB
     }
   }
+
+  def side(piece: Piece): Option[Side] =
+    if (piece == sideA)
+      Some(Side.A)
+    else if (piece == sideB)
+      Some(Side.B)
+    else
+      None
 }
 
 object Tile {
@@ -34,9 +36,8 @@ object Tile {
     b <- Piece.values if a <= b
   } yield Tile(a, b)
 
-  def bazzar(n: Int): Seq[Tile] = {
-    require(n > 2)
-    require(n < 28)
+  def boneyard(n: Int): Seq[Tile] = {
+    require(n > 2 && n < 28)
     Random.shuffle(all.toSeq).take(n)
   }
 }
