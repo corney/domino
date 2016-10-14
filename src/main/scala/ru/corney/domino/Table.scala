@@ -3,23 +3,19 @@ package ru.corney.domino
 import ru.corney.domino.Piece.Piece
 import ru.corney.domino.Side.Side
 
+import scala.annotation.tailrec
+
 case class Placed(tile: Tile, links: Map[Side, Option[Tile]]) {
   def link(link: Tile, side: Side): Placed =
     Placed(tile, links.updated(side, Some(link)))
 }
 
 object Placed {
-
-
-  def apply(tile: Tile)(implicit doublesAllowed:Boolean): Placed =
+  def apply(tile: Tile)(implicit doublesAllowed: Boolean): Placed =
     if (doublesAllowed && tile.double)
       Placed(tile, Map(Side.A -> None, Side.B -> None, Side.A_DOUBLE -> None, Side.B_DOUBLE -> None))
     else
       Placed(tile, Map(Side.A -> None, Side.B -> None))
-}
-
-class Table {
-
 }
 
 /**
@@ -43,7 +39,7 @@ object Table {
 
   def canConnectInCircle(boneyard: Seq[Tile]): Boolean = {
     // Красиво объединить в кольцо мы можем лишь набор с четным количеством костяшек
-    if (boneyard.size %2 == 0) {
+    if (boneyard.size % 2 == 0) {
       implicit val doublesAllowed = false
       val (table, status) = connect(boneyard)
       if (status) {
@@ -65,46 +61,37 @@ object Table {
     val tile :: tail = boneyard
     val placed = Placed(tile)
     val table = Map(tile -> placed)
-    connect(table, tail)
+    connectRecursive(table, tail)
   }
 
-  protected def connect(table: Map[Tile, Placed], tiles: Seq[Tile])(implicit doublesAllowed:Boolean): (Map[Tile, Placed], Boolean) = {
-    if (tiles.isEmpty) {
-      (table, true)
-    } else {
-      val links = for {
-        placed <- table.values
-        (side, link) <- placed.links if link.isEmpty
-        otherTile <- tiles
-        otherSide <- otherTile.side(placed.tile.piece(side))
-      } yield (placed.tile, side, otherTile, otherSide)
+  protected def connectRecursive(table: Map[Tile, Placed], tiles: Seq[Tile])(implicit doublesAllowed: Boolean): (Map[Tile, Placed], Boolean) = {
 
-      if (links.isEmpty) {
-        (table, false)
+    (for {
+      placed <- table.values
+      (side, link) <- placed.links if link.isEmpty
+      peerTile <- tiles
+      peerSide <- peerTile.side(placed.tile.piece(side))
+    } yield {
+      val updated = table + (
+        placed.tile -> table(placed.tile).link(peerTile, side),
+        peerTile -> Placed(peerTile).link(placed.tile, peerSide)
+        )
+      val rest = tiles.filterNot(tile => tile == peerTile)
+      if (rest.isEmpty) {
+        (updated, true)
       } else {
-        val result = links.map {
-          case (tile1, side1, tile2, side2) =>
-            val placed1 = table(tile1).link(tile2, side1)
-            val placed2 = Placed(tile2).link(tile1, side2)
-            val updated = table + (tile1 -> placed1, tile2 -> placed2)
-            val rest = tiles.filterNot(tile => tile == tile2)
-            if (rest.isEmpty) {
-              (updated, true)
-            } else {
-              connect(updated, rest)
-            }
-        }.find{
-          case (rTable, rStatus) => rStatus
-        }
-        result match {
-          case Some((rTable, rStatus)) =>
-            (rTable, rStatus)
-          case None =>
-            (table, false)
-        }
+        connectRecursive(updated, rest)
       }
+    }).find {
+      case (_, status) => status
+    } match {
+      case Some((rTable, rStatus)) =>
+        (rTable, rStatus)
+      case None =>
+        (table, false)
     }
   }
+
 
   def pretty(table: Map[Tile, Placed]) {
     for {
