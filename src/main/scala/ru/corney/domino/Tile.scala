@@ -1,5 +1,7 @@
 package ru.corney.domino
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import ru.corney.domino.Piece.Piece
 import ru.corney.domino.Side.Side
 
@@ -8,7 +10,7 @@ import scala.util.Random
 /**
   * Created by corney on 12.10.16.
   */
-case class Tile(sideA: Piece, sideB: Piece) {
+class Tile private (private val id: Int, sideA: Piece, sideB: Piece) {
   require(sideA <= sideB)
   val double = sideA == sideB
 
@@ -28,9 +30,22 @@ case class Tile(sideA: Piece, sideB: Piece) {
       Some(Side.B)
     else
       None
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case that: Tile => this.id == that.id
+      case _ => false
+    }
+
+  override def hashCode:Int = id.hashCode()
+
+  override def toString: String = "Tile(%s, %s)".format(sideA, sideB)
 }
 
 object Tile {
+
+  val id = new AtomicInteger(0)
+
   val all = for {
     a <- Piece.values
     b <- Piece.values if a <= b
@@ -40,6 +55,8 @@ object Tile {
     require(n > 2 && n < 28)
     Random.shuffle(all.toSeq).take(n)
   }
+
+  def apply(sideA: Piece, sideB: Piece): Tile = new Tile(id.getAndIncrement(), sideA, sideB)
 }
 
 object Piece extends Enumeration {

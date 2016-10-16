@@ -93,5 +93,28 @@ class TableSpecs extends Specification {
     }
 
 
+    "Duplicated tiles should be connected in right way" in {
+
+      val tiles = Seq(
+        Tile(Piece.ZERO, Piece.ZERO),
+        Tile(Piece.ZERO, Piece.FIVE),
+        Tile(Piece.TWO, Piece.FOUR),
+        Tile(Piece.ZERO, Piece.SIX),
+        Tile(Piece.TWO, Piece.SIX),
+        Tile(Piece.FOUR, Piece.FIVE),
+        Tile(Piece.ZERO, Piece.SIX)
+      )
+      Table.canConnectAny(tiles) must_== true
+      Table.canConnectInLine(tiles) must_== true
+      Table.canConnectInCircle(tiles) must_== false
+
+    }
+
+    "All tiles should be connected" in {
+      Table.canConnectAny(Tile.all.toList) must_== true
+      Table.canConnectInLine(Tile.all.toList) must_== true
+      Table.canConnectInCircle(Tile.all.toList) must_== true
+    }
   }
+
 }
